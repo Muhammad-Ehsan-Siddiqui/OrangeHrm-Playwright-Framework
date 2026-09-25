@@ -51,9 +51,10 @@ npx playwright test -g "valid login"
 ```text
 pages/
   LoginPage.ts           # Page Object Model for the login page
+  DashboardPage.ts       # Page Object Model for the dashboard
 
 fixtures/
-  testFixtures.ts        # Custom LoginPage fixture
+  testFixtures.ts        # Custom LoginPage and DashboardPage fixtures
 
 tests/
   login.spec.ts          # Login test scenarios
@@ -79,17 +80,20 @@ The custom fixture keeps page-object creation out of the test cases:
 Playwright page fixture
         |
         v
-LoginPage fixture
+LoginPage and DashboardPage fixtures
         |
         v
-Tests use loginPage
+Tests use page objects
 ```
 
-`testFixtures.ts` extends Playwright's built-in `test` object with a `loginPage` fixture. The fixture receives Playwright's `page`, creates a `LoginPage` instance, and provides it to each test.
+`testFixtures.ts` extends Playwright's built-in `test` object with `loginPage` and `dashboardPage` fixtures. Each fixture receives Playwright's built-in `page`, creates its page-object instance, and provides it to the tests.
+
+The valid-login flow uses `loginPage` to authenticate, then uses `dashboardPage` to verify that the Dashboard heading is displayed.
 
 ## Design Notes
 
 - Login locators are contained in `LoginPage`.
+- Dashboard locators and dashboard actions are contained in `DashboardPage`.
 - Locators use accessible roles and names.
 - Playwright auto-waiting and web-first assertions are used.
 - No hard-coded waits or `page.waitForTimeout()` are used.

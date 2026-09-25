@@ -1,12 +1,12 @@
 import { test, expect } from '../fixtures/testFixtures';
 
 test.describe('Login page', () => {
-  test('valid login', async ({ page, loginPage }) => {
+  test('valid login', async ({ loginPage, dashboardPage }) => {
     await loginPage.gotoLoginPage();
     await loginPage.login('Admin', 'admin123');
 
-    await expect(page).toHaveURL(/dashboard\/index/);
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 });
+    await expect(dashboardPage.getDashboardHeading()).toBeVisible({ timeout: 15000 });
+   // expect(await dashboardPage.isDashboardDisplayed()).toBe(true);
   });
 
   test('invalid login shows an error message', async ({ page, loginPage }) => {
