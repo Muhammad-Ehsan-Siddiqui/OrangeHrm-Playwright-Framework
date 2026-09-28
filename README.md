@@ -1,100 +1,160 @@
-# OrangeHRM Playwright Tests
+# OrangeHRM UI Automation Framework
 
-A beginner-friendly Playwright Test framework written in TypeScript for testing the OrangeHRM demo login page.
+A TypeScript UI automation project for the OrangeHRM open-source demo. It demonstrates maintainable Playwright test design through Page Object Model, reusable fixtures, generated test data, and focused smoke and regression suites.
 
-Application under test:
+**Application:** [OrangeHRM Demo](https://opensource-demo.orangehrmlive.com/web/index.php/auth/login)
 
-https://opensource-demo.orangehrmlive.com/web/index.php/auth/login
+## Project Highlights
 
-## Prerequisites
+- **Page Object Model:** Page-specific locators and actions are encapsulated in focused page classes.
+- **Separation of concerns:** Tests describe business flows; page objects handle browser interactions; test-data helpers generate and persist data.
+- **Reusable fixtures:** Playwright's `base.extend()` provides typed page objects to tests.
+- **DRY test design:** Page objects are created through shared typed fixtures, and generated user data is centralized in one utility.
+- **Stable interactions:** Tests use accessible roles and labels, Playwright auto-waiting, and web-first assertions instead of fixed delays.
+- **Scenario coverage:** Includes successful and unsuccessful login, required-field validation, and employee/system-user creation.
+- **Selective execution:** Smoke and regression tests can be run separately with npm scripts.
 
-- Node.js 18 or newer
+## Technology
+
+- TypeScript
+- Playwright Test
+- Faker for generated employee and account data
+- Node.js file APIs for local test-data persistence
+
+## Quick Start
+
+### Requirements
+
+- Node.js 20 or newer
 - npm
 
-## Installation
-
-Clone the repository and install the dependencies:
+### Install
 
 ```bash
 npm install
 npx playwright install chromium
 ```
 
-## Run Tests
+### Run Tests
 
-Run all tests in headless Chromium mode:
+Run the complete suite:
 
 ```bash
 npm test
 ```
 
-Run the tests in headed mode:
+Run the smoke suite for the critical login and page-title checks:
+
+```bash
+npm run test:smoke
+```
+
+Run all regression scenarios, including negative cases:
+
+```bash
+npm run test:regression
+```
+
+Run in headed mode or run a particular spec:
 
 ```bash
 npx playwright test --headed
-```
-
-Run only the login tests:
-
-```bash
 npx playwright test tests/login.spec.ts
 ```
 
-Run a specific test by name:
+Type-check the project without emitting JavaScript:
 
 ```bash
-npx playwright test -g "valid login"
+npx tsc --noEmit
 ```
+
+## Architecture
+
+```mermaid
+flowchart TD
+    Spec[Tests: business scenarios] --> Fixtures[Typed Playwright fixtures]
+    Fixtures --> PageObjects[Page objects]
+    PageObjects --> Browser[Playwright page and browser]
+    Spec --> Assertions[Web-first assertions]
+    Data[Test-data helper: Faker and local JSON] --> Spec
+```
+
+### Responsibilities
+
+- `tests/` contains readable scenarios and assertions; it avoids duplicating page selectors and interaction details.
+- `pages/` contains a page object per application area. Each class owns that page's locators and user actions.
+- `fixtures/testFixtures.ts` extends Playwright's built-in fixtures and constructs page objects with the provided `page`.
+- `utils/userTestData.ts` creates unique data and reads or writes the generated account record.
+- `playwright.config.ts` contains the shared test directory, base URL, and browser settings.
+
+### Base Page Decision
+
+There is intentionally no `BasePage` yet. The page objects share a dependency on Playwright's `Page`, but they do not currently share meaningful page-level behavior: navigation, locators, and waits are specific to each workflow. A base class that only stores or forwards `Page` would add inheritance without reducing duplication. If genuinely common behavior appears as the framework grows, it can be extracted then; page-specific locators and actions should remain in their owning page objects.
+
+### Test Flow
+
+```text
+Playwright creates page
+        -> fixture constructs page objects
+        -> test performs a user workflow
+        -> page objects interact with OrangeHRM
+        -> web-first assertions verify the outcome
+```
+
+The account-creation scenario creates an employee in PIM first, then creates an enabled ESS system account for that employee in Admin. This reflects OrangeHRM's requirement that a system account be linked to an employee record.
 
 ## Project Structure
 
 ```text
 pages/
-  LoginPage.ts           # Page Object Model for the login page
-  DashboardPage.ts       # Page Object Model for the dashboard
+  LoginPage.ts           # Login page locators and actions
+  DashboardPage.ts       # Dashboard heading and visibility checks
+  PimPage.ts             # Employee creation actions
+  AdminUsersPage.ts      # System-user creation and search actions
 
 fixtures/
-  testFixtures.ts        # Custom LoginPage and DashboardPage fixtures
+  testFixtures.ts        # Reusable page-object fixtures
+
+utils/
+  userTestData.ts        # Faker generation and saved-user JSON helpers
 
 tests/
-  login.spec.ts          # Login test scenarios
+  login.spec.ts          # Login and page-title scenarios
+  admin-user.spec.ts     # Employee/system-user and validation scenarios
 
-playwright.config.ts     # Playwright Test configuration
-package.json             # Project scripts and dependencies
-tsconfig.json            # TypeScript configuration
+playwright.config.ts     # Shared Playwright Test configuration
+package.json             # Dependencies and test commands
+tsconfig.json            # TypeScript compiler options
 ```
 
-## Test Scenarios
+## Coverage and Tags
 
-The test suite covers:
+- `@smoke`: valid login and login-page title checks.
+- `@regression`: all current functional scenarios.
+- `@negative`: invalid login and missing required user details.
 
-1. Successful login with `Admin` and `admin123`.
-2. Invalid login and verification of the `Invalid credentials` message.
-3. Verification of the login page title.
+Tags are in test titles, so Playwright's `--grep` selects them through the npm scripts. The smoke suite is a quick health check; regression runs the broader current coverage.
 
-## Fixture Flow
+## Generated Account Data
 
-The custom fixture keeps page-object creation out of the test cases:
+The account-creation test uses Faker to generate a unique employee ID, employee name, username, and password. After the account is verified, it saves the latest generated record to `test-data/createdUser.json` for later login or forgot-password scenarios.
 
-```text
-Playwright page fixture
-        |
-        v
-LoginPage and DashboardPage fixtures
-        |
-        v
-Tests use page objects
+Example reuse in a future test:
+
+```typescript
+import { loadCreatedUserTestData } from '../utils/userTestData';
+
+const user = await loadCreatedUserTestData();
+await loginPage.gotoLoginPage();
+await loginPage.login(user.username, user.password);
 ```
 
-`testFixtures.ts` extends Playwright's built-in `test` object with `loginPage` and `dashboardPage` fixtures. Each fixture receives Playwright's built-in `page`, creates its page-object instance, and provides it to the tests.
+The JSON file contains a password and is excluded by `.gitignore`. It is local test data for the public demo only; do not commit it or use this storage approach for real credentials. The public demo is shared and created employee/user records may persist between test runs.
 
-The valid-login flow uses `loginPage` to authenticate, then uses `dashboardPage` to verify that the Dashboard heading is displayed.
+## Engineering Practices
 
-## Design Notes
-
-- Login locators are contained in `LoginPage`.
-- Dashboard locators and dashboard actions are contained in `DashboardPage`.
-- Locators use accessible roles and names.
-- Playwright auto-waiting and web-first assertions are used.
-- No hard-coded waits or `page.waitForTimeout()` are used.
-- The framework intentionally does not include advanced features such as base pages, external test data, logging, retries, or reporting integrations.
+- Keep each page's locators and actions in its page object.
+- Keep scenario intent and assertions in test files.
+- Reuse page objects through typed fixtures and share data generation through a helper.
+- Prefer semantic locators and assertion-based waiting; do not use `page.waitForTimeout()`.
+- Keep changes scoped to the requirement and validate them with TypeScript and the relevant Playwright tests.

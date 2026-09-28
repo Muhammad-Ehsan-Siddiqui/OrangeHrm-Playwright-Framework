@@ -3,3 +3,4 @@ test-results/
 playwright-report/
 blob-report/
 .env
+test-data/createdUser.json
