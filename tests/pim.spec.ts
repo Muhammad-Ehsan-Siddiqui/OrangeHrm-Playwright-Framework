@@ -12,7 +12,7 @@ async function createTestEmployee(
 ) {
   const employee = createNewUserTestData();
 
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await loginPage.login(loginData.validLogin.username, loginData.validLogin.password);
   await pimPage.createEmployee(employee.employeeId, employee.firstName, employee.lastName);
 
@@ -38,7 +38,7 @@ test('PIM-004 search for a nonexistent employee @negative @regression', async ({
 }) => {
   const nonexistentEmployeeId = faker.string.numeric(12);
 
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await loginPage.login(loginData.validLogin.username, loginData.validLogin.password);
   await pimPage.searchByEmployeeId(nonexistentEmployeeId);
 
@@ -81,8 +81,8 @@ test('PIM-007 edit employee personal details @regression', async ({ loginPage, p
   await pimPage.updatePersonalDetails(updatedFirstName, updatedLastName);
   await pimPage.reloadEmployeeProfile();
 
-  await expect(pimPage.getFirstNameInput()).toHaveValue(updatedFirstName, { timeout: 15000 });
-  await expect(pimPage.getLastNameInput()).toHaveValue(updatedLastName, { timeout: 15000 });
+  await expect(pimPage.getFirstNameInput()).toHaveValue(updatedFirstName);
+  await expect(pimPage.getLastNameInput()).toHaveValue(updatedLastName);
 });
 
 test('PIM-009 reject a duplicate employee ID @negative @regression', async ({

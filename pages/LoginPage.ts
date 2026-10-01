@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import { BasePage } from './BasePage';
 
 export class LoginPage extends BasePage {
+  readonly loginUrl = 'auth/login';
   private readonly usernameInput: Locator;
   private readonly passwordInput: Locator;
   private readonly loginButton: Locator;
@@ -20,8 +21,9 @@ export class LoginPage extends BasePage {
     this.invalidCredentialsAlert = page.getByRole('alert');
   }
 
-  async gotoLoginPage(): Promise<void> {
-    await this.navigate('auth/login');
+  async navigateToLoginPage(): Promise<void> {
+    await this.navigate(this.loginUrl);
+    await this.waitForElement(this.loginButton);
   }
 
   async enterUsername(username: string): Promise<void> {
@@ -62,7 +64,7 @@ export class LoginPage extends BasePage {
   }
 
   async login(username: string, password: string): Promise<void> {
-    await logger.info('Attempt login');
+    await logger.info(`Login attempt for username: "${username}"`);
     await this.enterUsername(username);
     await this.enterPassword(password);
     await this.clickLogin();

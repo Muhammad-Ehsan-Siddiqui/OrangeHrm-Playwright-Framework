@@ -5,7 +5,7 @@ test.describe('Login page', () => {
     loginPage,
     loginData,
   }) => {
-    await loginPage.gotoLoginPage();
+    await loginPage.navigateToLoginPage();
     await loginPage.enterPassword(loginData.emptyUsername.password);
     await loginPage.clickLogin();
 
@@ -16,7 +16,7 @@ test.describe('Login page', () => {
     loginPage,
     loginData,
   }) => {
-    await loginPage.gotoLoginPage();
+    await loginPage.navigateToLoginPage();
     await loginPage.enterUsername(loginData.emptyPassword.username);
     await loginPage.clickLogin();
 
@@ -27,7 +27,7 @@ test.describe('Login page', () => {
     loginPage,
     loginData,
   }) => {
-    await loginPage.gotoLoginPage();
+    await loginPage.navigateToLoginPage();
     await loginPage.enterUsername(loginData.emptyCredentials.username);
     await loginPage.enterPassword(loginData.emptyCredentials.password);
     await loginPage.clickLogin();
@@ -41,9 +41,9 @@ test.describe('Login page', () => {
     dashboardPage,
     loginData,
   }) => {
-    await loginPage.gotoLoginPage();
+    await loginPage.navigateToLoginPage();
     await loginPage.login(loginData.validLogin.username, loginData.validLogin.password);
-    await expect(dashboardPage.getDashboardHeading()).toBeVisible({ timeout: 15000 });
+    await expect(dashboardPage.getDashboardHeading()).toBeVisible();
 
     await dashboardPage.logout();
 
@@ -51,18 +51,19 @@ test.describe('Login page', () => {
     await expect(loginPage.getLoginHeading()).toBeVisible();
   });
 
-  test('valid login @smoke @regression', async ({ loginPage, dashboardPage, loginData }) => {
-    await loginPage.gotoLoginPage();
+  test('valid login navigates to the dashboard @smoke @regression', async ({ page, loginPage, dashboardPage, loginData }) => {
+    await loginPage.navigateToLoginPage();
     await loginPage.login(loginData.validLogin.username, loginData.validLogin.password);
 
-    await expect(dashboardPage.getDashboardHeading()).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(/dashboard\/index/);
+    await expect(dashboardPage.getDashboardHeading()).toBeVisible();
   });
 
   test('invalid login shows an error message @negative @regression', async ({ loginPage, loginData }) => {
-    await loginPage.gotoLoginPage();
-    await loginPage.login(loginData.invalidLogin.username, loginData.invalidLogin.password);
+    await loginPage.navigateToLoginPage();
+    await loginPage.loginWithInvalidCredentials(loginData.invalidLogin.username, loginData.invalidLogin.password);
 
-    await expect(loginPage.getInvalidCredentialsAlert()).toContainText('Invalid credentials', { timeout: 15000 });
+    await expect(loginPage.getInvalidCredentialsAlert()).toContainText('Invalid credentials');
   });
 
   for (const scenario of [
@@ -74,7 +75,7 @@ test.describe('Login page', () => {
       loginData,
     }) => {
       const credentials = loginData[scenario.dataKey];
-      await loginPage.gotoLoginPage();
+      await loginPage.navigateToLoginPage();
       await loginPage.login(credentials.username, credentials.password);
 
       await expect(loginPage.getInvalidCredentialsAlert()).toContainText('Invalid credentials');
@@ -82,7 +83,7 @@ test.describe('Login page', () => {
   }
 
   test('login page has the expected title @smoke @regression', async ({ page, loginPage }) => {
-    await loginPage.gotoLoginPage();
+    await loginPage.navigateToLoginPage();
 
     await expect(page).toHaveTitle('OrangeHRM');
   });

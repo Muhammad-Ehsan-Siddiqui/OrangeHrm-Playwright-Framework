@@ -1,286 +1,278 @@
-# OrangeHRM UI Automation Framework
+# OrangeHRM Playwright Automation Framework
 
-A TypeScript UI automation project for the OrangeHRM open-source demo. It demonstrates maintainable Playwright test design through Page Object Model, reusable fixtures, generated test data, and focused smoke and regression suites.
+## 1. Framework Overview
 
-**Application:** [OrangeHRM Demo](https://opensource-demo.orangehrmlive.com/web/index.php/auth/login)
+A TypeScript UI automation framework built on **Playwright Test** using the **Page Object Model (POM)**. It targets the [OrangeHRM demo](https://opensource-demo.orangehrmlive.com/web/index.php/auth/login) and demonstrates typed fixtures, data-driven tests, multi-environment configuration, retries, screenshots, videos, traces, Allure reporting, and centralized logging.
 
-## Project Highlights
+```mermaid
+flowchart TD
+    Spec[tests/*.spec.ts] --> Fixtures[fixtures/testFixtures.ts]
+    Fixtures --> Pages[pages/* Page Objects]
+    Pages --> Base[BasePage: generic Playwright actions]
+    Base --> Logger[utils/logger.ts]
+    Fixtures --> Data[utils/testDataReader.ts -> test-data/*.json]
+    Config[utils/configReader.ts -> config/*.env] --> PWConfig[playwright.config.ts]
+    PWConfig --> Spec
+```
 
-- **Page Object Model:** Page-specific locators and actions are encapsulated in focused page classes.
-- **Separation of concerns:** Tests describe business flows; page objects handle browser interactions; test-data helpers generate and persist data.
-- **Reusable fixtures:** Playwright's `base.extend()` provides typed page objects to tests.
-- **DRY test design:** Page objects are created through shared typed fixtures, and generated user data is centralized in one utility.
-- **Stable interactions:** Tests use accessible roles and labels, Playwright auto-waiting, and web-first assertions instead of fixed delays.
-- **Scenario coverage:** Includes login/recovery flows, dashboard navigation checks, and PIM employee creation, search, update, and validation.
-- **Password recovery coverage:** Includes recovery entry, known/unknown usernames, required-field validation, and cancel navigation; email delivery is not claimed by the public-demo tests.
-- **Selective execution:** Smoke and regression tests can be run separately with npm scripts.
-- **Controlled execution:** Playwright defaults to one worker because tests mutate records in the shared public demo; set `WORKERS` to increase concurrency when using an isolated environment.
-- **Centralized diagnostics:** Failure screenshots, videos, traces, Allure results, HTML reports, and test logs are generated through configuration and fixtures.
-- **Environment and data support:** dotenv-backed dev/qa/staging settings and typed JSON login scenarios are kept outside individual test flows.
+## 2. Technologies Used
 
-## Technology
+| Tool | Purpose |
+|---|---|
+| TypeScript | Strongly typed test code |
+| Playwright / Playwright Test | Browser automation, runner, fixtures, assertions, retries, artifacts |
+| Node.js | Runtime |
+| Chromium | Default browser |
+| dotenv / cross-env | Environment selection (`dev`, `qa`, `staging`) |
+| allure-playwright / Allure 3 | Rich reporting |
+| JSON | Test data |
+| @faker-js/faker | Unique generated records for PIM/Admin tests |
 
-- TypeScript
-- Playwright Test
-- Node.js
-- Faker for generated employee and account data
-- Node.js file APIs for local test-data persistence
-- dotenv and cross-env for environment selection
-- Allure Playwright and Allure 3 for test reporting
-- Centralized TypeScript logging
+## 3. Project Structure
 
-## Quick Start
+```text
+├── pages/
+│   ├── BasePage.ts            # Generic Playwright helpers (no app locators)
+│   ├── LoginPage.ts           # Login locators/actions
+│   ├── DashboardPage.ts       # Dashboard heading, navigation, logout
+│   ├── AdminPage.ts           # Admin menu/heading
+│   ├── AdminUsersPage.ts      # System-user management (extends AdminPage)
+│   ├── ForgotPasswordPage.ts  # Password recovery
+│   └── PimPage.ts             # Employee management
+├── tests/
+│   ├── login.spec.ts          # Valid/invalid/data-driven login + title
+│   ├── dashboard.spec.ts      # Dashboard navigation
+│   ├── admin.spec.ts          # Admin navigation + system-user creation
+│   ├── forgot-password.spec.ts
+│   └── pim.spec.ts
+├── fixtures/testFixtures.ts   # Page-object, test-data and lifecycle-logging fixtures
+├── utils/
+│   ├── logger.ts              # Central DEBUG/INFO/WARN/ERROR logger
+│   ├── configReader.ts        # Loads config/<ENV>.env, typed settings
+│   ├── testDataReader.ts      # Typed, validated JSON reader
+│   └── userTestData.ts        # Faker-generated user data
+├── test-data/loginData.json
+├── config/{dev,qa,staging}.env
+├── reports/allure-results/    # Allure raw results (generated)
+├── logs/test-execution.log    # Execution log (generated)
+├── screenshots/               # Manual BasePage.takeScreenshot() output
+├── traces/  videos/           # Reserved artifact folders
+├── playwright.config.ts
+├── package.json
+├── tsconfig.json
+└── .env.example
+```
 
-### Requirements
+## 4. Prerequisites
 
-- Node.js 20.19+, 22.13+, or 24+
-- npm
+- Node.js 20.19+ (LTS recommended) and npm
+- Git
+- Allure 3 is installed as an npm dependency, so you don't need Java.
 
-### Install
+## 5. Node.js Installation
+
+Download the LTS installer from <https://nodejs.org> (or use `nvm`/`nvm-windows`), then verify:
+
+```bash
+node -v
+npm -v
+```
+
+## 6. Project Setup
+
+```bash
+git clone <repository-url>
+cd ORANGEHRM
+cp .env.example .env   # optional local overrides; never commit .env
+```
+
+## 7. npm install
 
 ```bash
 npm install
-npx playwright install chromium
 ```
 
-The `dev`, `qa`, and `staging` sample files currently target the OrangeHRM demo. Change their `BASE_URL` values for controlled environments. For local overrides, copy `.env.example` to `.env`; do not commit real credentials.
+## 8. Playwright Browser Installation
 
-The three sample environment files currently target the OrangeHRM demo. Replace their `BASE_URL` with the URLs for your controlled environments when needed. For local overrides, copy `.env.example` to `.env`; do not commit real credentials.
+```bash
+npx playwright install chromium
+# Linux CI agents may also need: npx playwright install --with-deps chromium
+```
 
-### Run Tests
+## 9. Environment Configuration
 
-Run the complete suite:
+`utils/configReader.ts` reads `ENV` (default `qa`) and loads `config/<ENV>.env`. Values from the shell take precedence over the `.env` files. Supported keys:
+
+```ini
+BASE_URL=https://opensource-demo.orangehrmlive.com/web/index.php/
+BROWSER=chromium
+HEADLESS=true
+TIMEOUT=30000
+EXPECT_TIMEOUT=10000
+ACTION_TIMEOUT=10000
+NAVIGATION_TIMEOUT=20000
+WORKERS=1
+```
+
+```bash
+npm run test:dev
+npm run test:qa
+npm run test:staging
+npx cross-env ENV=staging HEADLESS=false playwright test
+```
+
+Tests navigate with relative paths (`auth/login`), so the tests contain no environment URLs. Keep secrets in `.env` or your CI secret store, never in tracked files.
+
+## 10. Running All Tests
 
 ```bash
 npm test
 ```
 
-Run the smoke suite for the critical login and page-title checks:
-
-```bash
-npm run test:smoke
-```
-
-Run all regression scenarios, including negative cases:
-
-```bash
-npm run test:regression
-```
-
-Run in headed mode or run a particular spec:
+## 11. Running Headed Tests
 
 ```bash
 npm run test:headed
-npm run test:debug
+```
+
+## 12. Running a Specific Test
+
+```bash
+npx playwright test tests/admin.spec.ts
+npx playwright test -g "valid login"
+npx playwright test tests/login.spec.ts:54
+```
+
+## 13. Running Smoke Tests
+
+```bash
+npm run test:smoke        # --grep @smoke
+npm run test:regression   # --grep @regression
+```
+
+The tags `@smoke`, `@regression` and `@negative` go in test titles.
+
+## 14. Running Login Tests
+
+```bash
 npm run test:login
-npx playwright test tests/login.spec.ts
 ```
 
-Select an environment with the cross-platform npm scripts:
+## 15. Debugging Tests
 
 ```bash
-npm run test:dev
-npm run test:qa
-npm run test:staging
+npm run test:debug                       # Playwright Inspector
+npx playwright test --ui                 # UI mode with time-travel
+npx playwright codegen <BASE_URL>        # Locator discovery
 ```
 
-Select an environment (the scripts use `cross-env` so they work on Windows and Unix shells):
+To follow the actions taken, check `logs/test-execution.log`.
+
+## 16. Retries
+
+```ts
+retries: process.env.CI ? 2 : 0
+```
+
+Retries run only on CI, where shared infrastructure and network latency cause occasional transient failures. Locally, retries are `0` so failures show up immediately. Keep retries low and treat every test that passes only on retry as **flaky**. Playwright marks these tests as flaky in its reports, and each one needs investigating. Retries must never hide a real defect or a bad locator or synchronization.
+
+## 17. Screenshots
+
+`screenshot: 'only-on-failure'` attaches a screenshot to every failed test under `test-results/<test>/`, and the screenshot also appears in the HTML and Allure reports. For a deliberate capture, use `BasePage.takeScreenshot(name)`, which saves to `screenshots/` and logs the file path.
+
+## 18. Videos
+
+`video: 'retain-on-failure'` records every test but keeps the video only for failed tests (`test-results/<test>/video.webm`). This avoids storing videos of passing tests.
+
+## 19. Traces
+
+`trace: 'retain-on-failure'` keeps a `trace.zip` for each failed test, with actions, DOM snapshots, console output and network activity:
 
 ```bash
-npm run test:dev
-npm run test:qa
-npm run test:staging
+npx playwright show-trace test-results/<failed-test-folder>/trace.zip
 ```
 
-## Failure Artifacts and Allure Reports
+You can also drag the file into <https://trace.playwright.dev>.
 
-### Screenshots
+## 20. Allure Reports
 
-Playwright captures screenshots automatically only when a test fails. Screenshots are saved with that test's output under `test-results/`; tests do not need to call `page.screenshot()`. `BasePage.takeScreenshot(name)` is available for a specific diagnostic screenshot when a test has a clear reason to capture one.
-
-### Traces
-
-Playwright records a trace and retains it for failed tests locally. On CI, tracing is recorded on the first retry. Traces include actions, DOM snapshots, and network activity. Find `trace.zip` in the failing test's `test-results/` folder and inspect it with:
+The `allure-playwright` reporter writes raw results to `reports/allure-results/` on each run.
 
 ```bash
-npx playwright show-trace path/to/trace.zip
+npx playwright test
+npx allure generate reports/allure-results --clean -o reports/allure-report   # or: npm run allure:generate
+npx allure open reports/allure-report                                         # or: npm run allure:open
+npm run test:allure                                                           # run + report in one step
 ```
 
-### Video
+Results accumulate between runs. To get a report for a single run only, delete `reports/allure-results/*` first. The built-in Playwright HTML report opens with `npm run test:report`.
 
-Videos are recorded during the test and retained only for failed tests. They are stored with the test's output under `test-results/` to avoid keeping successful-run video files.
+## 21. Adding a New Page Object
 
-### Allure
+1. Create `pages/LeavePage.ts` and have it extend `BasePage`.
+2. Declare the locators as `private readonly` fields, built in the constructor with `getByRole`, `getByLabel` or `getByText`.
+3. Expose business actions (for example `applyLeave()`) and locator getters for assertions.
 
-The configured Allure reporter writes results to `reports/allure-results/` during `npm test`. Result files accumulate between runs; remove that directory before a run when you want a report containing only that run. Generate a browsable report with:
-
-```bash
-npm run allure:generate
+```ts
+export class LeavePage extends BasePage {
+  private readonly leaveMenu: Locator;
+  constructor(page: Page) {
+    super(page);
+    this.leaveMenu = page.getByRole('link', { name: 'Leave', exact: true });
+  }
+  async open(): Promise<void> {
+    await this.click(this.leaveMenu, 'Leave menu');
+  }
+}
 ```
 
-Open and serve the generated report locally with:
+## 22. Adding a New Test
 
-```bash
-npm run allure:open
+```ts
+import { test, expect } from '../fixtures/testFixtures';
+
+test('LEAVE-001 open leave list @regression', async ({ loginPage, leavePage, loginData }) => {
+  await loginPage.navigateToLoginPage();
+  await loginPage.login(loginData.validLogin.username, loginData.validLogin.password);
+  await leavePage.open();
+  await expect(leavePage.getHeading()).toBeVisible();
+});
 ```
 
-Allure results and generated reports are ignored by Git. Allure 3 is included as a project dependency and runs on Node.js; Java is not required for these commands. `npm run test:allure` is also available to run Playwright through Allure's CLI integration.
+Use web-first assertions such as `toBeVisible`, `toHaveURL` and `toHaveTitle`. Don't put locators or `waitForTimeout()` in test files.
 
-Open the built-in Playwright HTML report with:
+## 23. Adding JSON Test Data
 
-```bash
-npm run test:report
+1. Add the case to `test-data/loginData.json` (for example `"lockedUser": { "username": "...", "password": "..." }`).
+2. Add the key to the `LoginTestData` interface and the validated `cases` list in `utils/testDataReader.ts`.
+3. Use it through the `loginData` fixture, or loop over the cases to run data-driven tests:
+
+```ts
+for (const scenario of [{ name: 'invalid username', dataKey: 'invalidUsername' }] as const) {
+  test(`reject ${scenario.name}`, async ({ loginPage, loginData }) => { /* ... */ });
+}
 ```
 
-Type-check the project without emitting JavaScript:
+## 24. Using Fixtures
 
-```bash
-npx tsc --noEmit
-```
+`fixtures/testFixtures.ts` extends Playwright's `test` with:
 
-## Architecture
+- `loginPage`, `dashboardPage`, `adminPage`, `adminUsersPage`, `pimPage` and `forgotPasswordPage`, each built from the same `page` object
+- `loginData`, the typed and validated JSON login data
+- `testLifecycle`, an auto fixture that logs each test's start and finish, its status and any errors
 
-```mermaid
-flowchart TD
-    Spec[Tests: business scenarios] --> Fixtures[Typed Playwright fixtures]
-    Fixtures --> PageObjects[Page objects]
-    PageObjects --> Browser[Playwright page and browser]
-    Spec --> Assertions[Web-first assertions]
-    Data[Test-data helper: Faker and local JSON] --> Spec
-```
+To register a new page object, add it to the `Fixtures` type and add one `async ({ page }, use) => use(new XPage(page))` entry.
 
-### Responsibilities
+## 25. Coding Standards
 
-- `tests/` contains readable scenarios and assertions; it avoids duplicating page selectors and interaction details.
-- `pages/` contains a page object per application area. Each class owns that page's locators and user actions; `BasePage` contains generic browser helpers only.
-- `pages/BasePage.ts` implements generic Playwright operations without application-specific selectors.
-- `pages/AdminPage.ts` owns shared Admin navigation and headings; `AdminUsersPage` extends it for system-user workflows.
-- `fixtures/testFixtures.ts` extends Playwright's built-in fixtures and constructs page objects with the provided `page`.
-- `fixtures/testFixtures.ts` also loads typed login data and logs test lifecycle events automatically.
-- `utils/userTestData.ts` creates unique data and reads or writes the generated account record.
-- `utils/testDataReader.ts` validates and returns JSON login scenarios.
-- `utils/configReader.ts` selects an environment file and resolves typed browser/timeout settings.
-- `utils/logger.ts` writes centralized action and test lifecycle logs without recording credentials.
-- `playwright.config.ts` contains the shared test directory, base URL, and browser settings.
-
-### Page Object Responsibilities
-
-`BasePage` holds the shared Playwright `Page` and reusable generic actions such as click, fill, navigation, visibility, text retrieval, keyboard input, option selection, page-load waits, URL waits, and explicit screenshots. It contains no OrangeHRM selectors. Each concrete POM owns its own locators and application workflow. `AdminPage` groups shared Admin navigation/heading behavior, and `AdminUsersPage` extends it with user-management operations.
-
-### Test Flow
-
-```text
-Playwright creates page
-        -> fixture constructs page objects
-        -> test performs a user workflow
-        -> page objects interact with OrangeHRM
-        -> web-first assertions verify the outcome
-```
-
-The account-creation scenario creates an employee in PIM first, then creates an enabled ESS system account for that employee in Admin. This reflects OrangeHRM's requirement that a system account be linked to an employee record.
-
-## Project Structure
-
-```text
-pages/
-  BasePage.ts            # Generic Playwright browser helpers
-  LoginPage.ts           # Login page locators and actions
-  DashboardPage.ts       # Dashboard heading and visibility checks
-  AdminPage.ts           # Shared Admin navigation and heading checks
-  ForgotPasswordPage.ts  # Password recovery page actions and confirmation
-  PimPage.ts             # Employee creation actions
-  AdminUsersPage.ts      # System-user creation and search actions
-
-fixtures/
-  testFixtures.ts        # Reusable page-object fixtures
-
-utils/
-  logger.ts              # Central TypeScript logger
-  configReader.ts        # dotenv and environment configuration
-  testDataReader.ts      # Typed JSON login test-data reader
-  userTestData.ts        # Faker generation and saved-user JSON helpers
-
-test-data/
-  loginData.json         # Valid, invalid, and empty credential cases
-  createdUser.json       # Generated locally and ignored by Git
-
-config/
-  dev.env
-  qa.env
-  staging.env
-
-logs/
-  test-execution.log     # Created/updated during test runs
-
-reports/
-  allure-results/        # Generated Allure test results
-
-tests/
-  login.spec.ts          # Login and page-title scenarios
-  forgot-password.spec.ts # Password recovery scenarios
-  dashboard.spec.ts      # Dashboard navigation checks
-  pim.spec.ts            # PIM search, profile, update, and validation cases
-  admin-user.spec.ts     # Employee/system-user and validation scenarios
-
-playwright.config.ts     # Shared Playwright Test configuration
-package.json             # Dependencies and test commands
-tsconfig.json            # TypeScript compiler options
-.env.example             # Safe local configuration template
-```
-
-## Coverage and Tags
-
-- `@smoke`: valid login, logout, login-page title, Forgot Password entry, and PIM employee search checks.
-- `@regression`: all current functional scenarios.
-- `@negative`: invalid credentials, missing login/recovery fields, unknown recovery username, nonexistent employee search, duplicate employee ID, and missing required user details.
-
-Tags are in test titles, so Playwright's `--grep` selects them through the npm scripts. The smoke suite is a quick health check; regression runs the broader current coverage.
-
-Forgot Password cases assert the application's UI confirmation only. They do not verify mailbox delivery, which the public demo does not make available for automated testing.
-
-Current Dashboard/PIM coverage includes DASH-002 and PIM-003 through PIM-007, PIM-009, and PIM-011. PIM-008 remains deferred by the test plan because it depends on configured job master data. PIM-010 is not automated: the public demo exposes its destructive delete action as an icon without a stable accessible name, so a reliable and safely scoped locator is not currently available.
-
-## Generated Account Data
-
-The account-creation test uses Faker to generate a unique employee ID, employee name, username, and password. After the account is verified, it saves the latest generated record to `test-data/createdUser.json` for later login or forgot-password scenarios.
-
-Example reuse in a future test:
-
-```typescript
-import { loadCreatedUserTestData } from '../utils/userTestData';
-
-const user = await loadCreatedUserTestData();
-await loginPage.gotoLoginPage();
-await loginPage.login(user.username, user.password);
-```
-
-The JSON file contains a password and is excluded by `.gitignore`. It is local test data for the public demo only; do not commit it or use this storage approach for real credentials. The public demo is shared and created employee/user records may persist between test runs.
-
-## Engineering Standards Applied
-
-This project follows enterprise-oriented design practices at the scale of a focused UI automation portfolio project:
-
-- **Separation of concerns:** Page-specific selectors and UI actions belong in their page objects. Tests describe scenarios and assert outcomes; fixtures construct page objects; `userTestData.ts` owns generated data and local persistence.
-- **DRY and reuse:** Tests share page objects through typed fixtures, and account data generation/loading is centralized instead of being repeated across specs.
-- **Strong typing:** Page objects, fixtures, and generated user data use explicit TypeScript types. `npx tsc --noEmit` checks types without producing build artifacts.
-- **Data-driven testing:** `test-data/loginData.json` provides valid, invalid-username/password, and empty-field cases through the validated `testDataReader` fixture.
-- **Data-driven login tests:** `loginData.json` includes valid, invalid-username, invalid-password, empty-username, empty-password, and empty-credentials examples; typed fixtures provide them to tests.
-- **Maintainable selectors:** Prefer Playwright roles, names, and placeholders. Label-anchored locators are used only where the demo does not expose an accessible name.
-- **Deterministic synchronization:** Use Playwright auto-waiting and web-first assertions; do not add arbitrary sleeps such as `page.waitForTimeout()`.
-- **Retries and artifacts:** Retries are disabled locally and limited to two in CI; screenshots and videos are retained on failure, and CI traces are captured on the first retry.
-- **Centralized logging:** Test lifecycle and generic page actions are logged to `logs/test-execution.log`; credentials are never written to logs.
-- **Appropriate abstraction:** Generic browser actions belong in `BasePage`; application locators/actions stay in their owning POM. `AdminUsersPage` reuses shared Admin navigation from `AdminPage`.
-- **Focused validation:** Run the relevant tests after changes, then run the full suite before publishing.
-
-## Extending the Framework
-
-1. Add a Page Object for a new application area. Extend `BasePage` for generic browser helpers, but keep that area's locators and business actions in its own class.
-2. Add a typed fixture in `fixtures/testFixtures.ts` and construct the Page Object with Playwright's built-in `page` fixture.
-3. Add scenario assertions in a spec under `tests/`; reuse existing fixtures instead of constructing page objects in each test.
-4. Add credential scenarios to `test-data/loginData.json` and update `LoginTestData` validation when introducing new cases.
-5. Put safe environment-specific settings in `config/*.env`. Keep secrets in local `.env` or a CI secret store, never in tracked files.
-6. Run `npx tsc --noEmit`, the focused spec, and `npm test`. Inspect `test-results/`, `playwright-report/`, and the Allure report when diagnosing failures.
+- POM: application locators live only in their page object. `BasePage` stays generic.
+- No locators in tests and no hard-coded waits. Rely on auto-waiting and web-first assertions.
+- Locator priority: `getByRole` → `getByLabel`/`getByPlaceholder` → `getByText`. Use CSS only where the demo has no accessible name.
+- Strict TypeScript. Run `npx tsc --noEmit` before committing.
+- Config, logging and test data are each centralized. Never log passwords.
+- Tests are independent, tagged, and named with test-case IDs.
+- DRY and SOLID where they help. Add abstractions only when they remove real duplication.
 
 ## Scope and Limitations
 
-This framework exercises a shared public demo, not a controlled production environment. The demo login credentials are public sample credentials, and generated test-account credentials are stored locally in an ignored JSON file for reuse. Do not use these patterns for real accounts or production secrets. Forgot Password tests assert the UI response only; they do not verify email delivery.
+The framework runs against a shared public demo. Demo credentials are public, and the generated accounts are saved to the git-ignored `test-data/createdUser.json`. Forgot-password tests check only the UI confirmation, not email delivery. The default is one worker because the tests change shared data.

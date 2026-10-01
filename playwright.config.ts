@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 import { frameworkConfig } from './utils/configReader';
 
 export default defineConfig({
@@ -8,6 +8,7 @@ export default defineConfig({
   expect: {
     timeout: frameworkConfig.expectTimeout,
   },
+  // Retries absorb transient CI/network noise only; locally a failure must surface immediately.
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : frameworkConfig.workers,
   forbidOnly: Boolean(process.env.CI),
@@ -24,6 +25,12 @@ export default defineConfig({
     navigationTimeout: frameworkConfig.navigationTimeout,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure',
+    trace: 'retain-on-failure',
   },
+  projects: [
+    {
+      name: frameworkConfig.browser,
+      use: { ...devices['Desktop Chrome'], browserName: frameworkConfig.browser },
+    },
+  ],
 });

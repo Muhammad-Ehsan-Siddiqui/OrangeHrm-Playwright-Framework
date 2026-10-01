@@ -7,9 +7,9 @@ test('DASH-002 critical dashboard navigation entries are available @regression',
   dashboardPage,
   loginData,
 }) => {
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await loginPage.login(loginData.validLogin.username, loginData.validLogin.password);
-  await expect(dashboardPage.getDashboardHeading()).toBeVisible({ timeout: 15000 });
+  await expect(dashboardPage.getDashboardHeading()).toBeVisible();
 
   for (const item of criticalNavigationItems) {
     await expect(dashboardPage.getNavigationItem(item)).toBeVisible();

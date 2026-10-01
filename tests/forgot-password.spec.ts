@@ -23,7 +23,7 @@ test('FP-001 open Forgot Password from the login page @smoke @regression', async
   loginPage,
   forgotPasswordPage,
 }) => {
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await forgotPasswordPage.openFromLoginPage();
 
   await expect(page).toHaveURL(/auth\/requestPasswordResetCode/);
@@ -37,7 +37,7 @@ test('FP-002 submit reset request for a known username @regression', async ({
 }) => {
   const username = await getKnownUsername();
 
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await forgotPasswordPage.openFromLoginPage();
   await forgotPasswordPage.enterUsername(username);
   await forgotPasswordPage.submitResetRequest();
@@ -51,7 +51,7 @@ test('FP-003 empty username shows required validation @negative @regression', as
   loginPage,
   forgotPasswordPage,
 }) => {
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await forgotPasswordPage.openFromLoginPage();
   await forgotPasswordPage.submitResetRequest();
 
@@ -65,7 +65,7 @@ test('FP-004 unknown username receives safe reset-form response @negative @regre
 }) => {
   const unknownUsername = `unknown_${faker.string.uuid().replaceAll('-', '')}`;
 
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await forgotPasswordPage.openFromLoginPage();
   await forgotPasswordPage.enterUsername(unknownUsername);
   await forgotPasswordPage.submitResetRequest();
@@ -80,7 +80,7 @@ test('FP-005 cancel returns to the login page @regression', async ({
   loginPage,
   forgotPasswordPage,
 }) => {
-  await loginPage.gotoLoginPage();
+  await loginPage.navigateToLoginPage();
   await forgotPasswordPage.openFromLoginPage();
   await forgotPasswordPage.returnToLoginPage();
 
