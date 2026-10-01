@@ -2,5 +2,13 @@ node_modules/
 test-results/
 playwright-report/
 blob-report/
+allure-results/
+allure-report/
+reports/allure-results/
+reports/allure-report/
+logs/*.log
+screenshots/*.png
+videos/
+traces/
 .env
 test-data/createdUser.json
